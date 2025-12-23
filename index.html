@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InsightRAG | Consumer Intelligence RAG Pipeline</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg-primary: #0a0b0f;
+      --bg-secondary: #12141a;
+      --bg-tertiary: #1a1d24;
+      --bg-card: #1e2128;
+      --bg-elevated: #252830;
+      
+      --accent-primary: #6366f1;
+      --accent-secondary: #4f46e5;
+      --accent-cyan: #22d3ee;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-rose: #f43f5e;
+      --accent-violet: #8b5cf6;
+      --accent-blue: #3b82f6;
+      --accent-teal: #14b8a6;
+      
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --text-dim: #475569;
+      
+      --border: #2d3748;
+      --border-light: #3d4a5c;
+      
+      --gradient-primary: linear-gradient(135deg, #3b82f6, #22d3ee);
+      --gradient-success: linear-gradient(135deg, #10b981, #22d3ee);
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg-primary);
+      font-family: "IBM Plex Sans", -apple-system, sans-serif;
+      color: var(--text-primary);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    .bg-effects {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .bg-grid {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    .bg-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.3;
+    }
+
+    .bg-orb-1 {
+      width: 500px;
+      height: 500px;
+      top: -150px;
+      right: -100px;
+      background: radial-gradient(circle, rgba(59,130,246,0.2) 0%, transparent 70%);
+    }
+
+    .bg-orb-2 {
+      width: 400px;
+      height: 400px;
+      bottom: -100px;
+      left: -100px;
+      background: radial-gradient(circle, rgba(34,211,238,0.15) 0%, transparent 70%);
+    }
+
+    .header {
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      z-index: 100;
+      background: rgba(10,11,15,0.95);
+      backdrop-filter: blur(20px);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--gradient-primary);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 20px rgba(59,130,246,0.35);
+    }
+
+    .logo-text {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 600;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-secondary);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .nav-tab {
+      padding: 10px 18px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .nav-tab:hover {
+      color: var(--text-primary);
+      background: var(--bg-tertiary);
+    }
+
+    .nav-tab.active {
+      background: var(--gradient-primary);
+      color: white;
+      box-shadow: 0 4px 15px rgba(59,130,246,0.35);
+    }
+
+    .header-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: rgba(59,130,246,0.1);
+      border: 1px solid rgba(59,130,246,0.25);
+      border-radius: 100px;
+      font-size: 11px;
+      color: var(--accent-blue);
+      font-weight: 600;
+      font-family: "IBM Plex Mono", monospace;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent-emerald);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.85); }
+    }
+
+    .main {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 28px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .demo-panel {
+      display: none;
+      animation: fadeSlideIn 0.4s ease;
+    }
+
+    .demo-panel.active {
+      display: block;
+    }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .demo-hero {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .demo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      font-size: 11px;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .demo-title {
+      font-size: 40px;
+      font-weight: 700;
+      letter-spacing: -1.5px;
+      margin-bottom: 12px;
+      line-height: 1.1;
+    }
+
+    .demo-title .highlight {
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .demo-subtitle {
+      font-size: 15px;
+      color: var(--text-secondary);
+      max-width: 700px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0,0,0,0.2);
+    }
+
+    .card-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 100px;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: "IBM Plex Mono", monospace;
+      text-transform: uppercase;
+    }
+
+    .status-badge.ready {
+      background: rgba(16,185,129,0.12);
+      border: 1px solid rgba(16,185,129,0.3);
+      color: var(--accent-emerald);
+    }
+
+    .status-badge.processing {
+      background: rgba(245,158,11,0.12);
+      border: 1px solid rgba(245,158,11,0.3);
+      color: var(--accent-amber);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse 1.5s infinite;
+    }
+
+    /* Chat Interface */
+    .chat-layout {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 20px;
+      height: 600px;
+    }
+
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .message {
+      max-width: 85%;
+      animation: messageIn 0.3s ease;
+    }
+
+    @keyframes messageIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user {
+      align-self: flex-end;
+    }
+
+    .message.assistant {
+      align-self: flex-start;
+    }
+
+    .message-content {
+      padding: 14px 18px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .message.user .message-content {
+      background: var(--gradient-primary);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.assistant .message-content {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+
+    .message-meta {
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .message.user .message-meta {
+      justify-content: flex-end;
+    }
+
+    /* Sources */
+    .sources-list {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .sources-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .source-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      background: var(--bg-card);
+      border-radius: 8px;
+      margin-bottom: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .source-item:hover {
+      background: var(--bg-elevated);
+      transform: translateX(4px);
+    }
+
+    .source-icon {
+      width: 24px;
+      height: 24px;
+      background: rgba(59,130,246,0.15);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    .source-info {
+      flex: 1;
+    }
+
+    .source-title {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .source-meta {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .source-score {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      color: var(--accent-emerald);
+    }
+
+    /* Chat Input */
+    .chat-input-container {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-tertiary);
+    }
+
+    .chat-input-wrapper {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .chat-input {
+      flex: 1;
+      padding: 14px 18px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .chat-input:focus {
+      border-color: var(--accent-blue);
+    }
+
+    .chat-input::placeholder {
+      color: var(--text-dim);
+    }
+
+    .send-btn {
+      width: 48px;
+      height: 48px;
+      background: var(--gradient-primary);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .send-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 20px rgba(59,130,246,0.4);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .sidebar-card {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .sidebar-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Stats Grid */
+    .stats-mini {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat-mini {
+      background: var(--bg-card);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .stat-mini-value {
+      font-size: 20px;
+      font-weight: 700;
+      font-family: "IBM Plex Mono", monospace;
+      color: var(--accent-cyan);
+    }
+
+    .stat-mini-label {
+      font-size: 9px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 4px;
+    }
+
+    /* Data Sources */
+    .data-source {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      background: var(--bg-card);
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .data-source:last-child {
+      margin-bottom: 0;
+    }
+
+    .data-source-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .data-source-icon.twitter { background: rgba(29,161,242,0.15); }
+    .data-source-icon.news { background: rgba(239,68,68,0.15); }
+    .data-source-icon.reddit { background: rgba(255,69,0,0.15); }
+    .data-source-icon.reviews { background: rgba(16,185,129,0.15); }
+
+    .data-source-info {
+      flex: 1;
+    }
+
+    .data-source-name {
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .data-source-count {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .data-source-status {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+    }
+
+    /* Query Examples */
+    .query-example {
+      padding: 10px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: 8px;
+    }
+
+    .query-example:hover {
+      border-color: var(--accent-blue);
+      color: var(--text-primary);
+      background: rgba(59,130,246,0.05);
+    }
+
+    .query-example:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Pipeline Tab */
+    .pipeline-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .pipeline-step {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      position: relative;
+    }
+
+    .pipeline-step::after {
+      content: '→';
+      position: absolute;
+      right: -12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      font-size: 20px;
+    }
+
+    .pipeline-step:last-child::after {
+      display: none;
+    }
+
+    .pipeline-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 12px;
+      background: rgba(59,130,246,0.15);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .pipeline-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .pipeline-desc {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    /* Metrics Dashboard */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .metric-card {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .metric-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .metric-value {
+      font-size: 28px;
+      font-weight: 700;
+      font-family: "IBM Plex Mono", monospace;
+    }
+
+    .metric-value.info { color: var(--accent-cyan); }
+    .metric-value.success { color: var(--accent-emerald); }
+    .metric-value.warning { color: var(--accent-amber); }
+
+    /* Ingestion Monitor */
+    .ingestion-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px;
+      background: var(--bg-tertiary);
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+
+    .ingestion-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      background: rgba(59,130,246,0.15);
+    }
+
+    .ingestion-info {
+      flex: 1;
+    }
+
+    .ingestion-name {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .ingestion-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .ingestion-progress {
+      width: 100px;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: var(--bg-elevated);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: var(--gradient-primary);
+      transition: width 0.5s ease;
+    }
+
+    .progress-text {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-align: right;
+      font-family: "IBM Plex Mono", monospace;
+    }
+
+    /* Vector Stats */
+    .vector-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .vector-stat {
+      background: var(--bg-card);
+      border-radius: 8px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .vector-stat-value {
+      font-size: 22px;
+      font-weight: 700;
+      font-family: "IBM Plex Mono", monospace;
+      color: var(--accent-cyan);
+    }
+
+    .vector-stat-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 4px;
+    }
+
+    /* Architecture Tab */
+    .arch-diagram {
+      background: var(--bg-tertiary);
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 24px;
+    }
+
+    .arch-layers {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .arch-layer {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .arch-layer-label {
+      width: 120px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .arch-layer-content {
+      flex: 1;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .arch-component {
+      padding: 12px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .arch-component.primary {
+      background: rgba(59,130,246,0.15);
+      border-color: rgba(59,130,246,0.3);
+      color: var(--accent-blue);
+    }
+
+    .arch-component.secondary {
+      background: rgba(34,211,238,0.15);
+      border-color: rgba(34,211,238,0.3);
+      color: var(--accent-cyan);
+    }
+
+    .arch-component.tertiary {
+      background: rgba(16,185,129,0.15);
+      border-color: rgba(16,185,129,0.3);
+      color: var(--accent-emerald);
+    }
+
+    .tech-stack {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 24px;
+    }
+
+    .tech-tag {
+      padding: 8px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 24px;
+      padding: 18px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .control-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 11px 22px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn:hover {
+      border-color: var(--accent-blue);
+      background: rgba(59,130,246,0.08);
+    }
+
+    .btn.primary {
+      background: var(--gradient-primary);
+      border: none;
+      color: white;
+    }
+
+    .btn.primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(59,130,246,0.4);
+    }
+
+    .footer {
+      text-align: center;
+      padding: 32px;
+      color: var(--text-muted);
+      font-size: 12px;
+      border-top: 1px solid var(--border);
+      margin-top: 40px;
+    }
+
+    .footer-highlight {
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 700;
+    }
+
+    @media (max-width: 1200px) {
+      .chat-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+      .pipeline-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .pipeline-step::after {
+        display: none;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        gap: 14px;
+      }
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .pipeline-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-effects">
+    <div class="bg-grid"></div>
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+  </div>
+
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">🔍</div>
+      <div>
+        <div class="logo-text">InsightRAG</div>
+        <div class="logo-sub">Consumer Intelligence Pipeline</div>
+      </div>
+    </div>
+
+    <nav class="nav-tabs">
+      <button class="nav-tab active" onclick="switchTab('query', this)">
+        💬 Query Interface
+      </button>
+      <button class="nav-tab" onclick="switchTab('pipeline', this)">
+        ⚡ Pipeline Monitor
+      </button>
+      <button class="nav-tab" onclick="switchTab('architecture', this)">
+        🏗️ Architecture
+      </button>
+    </nav>
+
+    <div class="header-badge">
+      <span class="pulse-dot"></span>
+      Vespa • 2.4M docs indexed
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- QUERY INTERFACE -->
+    <div class="demo-panel active" id="query">
+      <div class="demo-hero">
+        <div class="demo-badge">💬 Natural Language Queries</div>
+        <h1 class="demo-title">Consumer <span class="highlight">Intelligence RAG</span></h1>
+        <p class="demo-subtitle">Ask natural language questions about consumer sentiment, market trends, and brand perception. Powered by semantic search over millions of documents.</p>
+      </div>
+
+      <div class="chat-layout">
+        <div class="card chat-container">
+          <div class="card-header">
+            <span class="card-title">Query Interface</span>
+            <div class="status-badge ready">
+              <span class="status-dot"></span>
+              Connected
+            </div>
+          </div>
+          
+          <div class="chat-messages" id="chat-messages">
+            <div class="message assistant">
+              <div class="message-content">
+                👋 Hi! I'm your Consumer Intelligence assistant. Ask me anything about brand sentiment, market trends, or consumer feedback across our indexed sources.
+              </div>
+              <div class="message-meta">
+                <span>InsightRAG</span>
+                <span>•</span>
+                <span>Just now</span>
+              </div>
+            </div>
+
+            <div class="message user">
+              <div class="message-content">
+                What are consumers saying about Apple's sustainability efforts?
+              </div>
+              <div class="message-meta">
+                <span>You</span>
+                <span>•</span>
+                <span>2m ago</span>
+              </div>
+            </div>
+
+            <div class="message assistant">
+              <div class="message-content">
+                Based on 1,847 documents from the past 30 days, consumer sentiment around Apple's sustainability efforts is predominantly positive (+0.62):
+
+                <br><br><strong>Key Findings:</strong>
+                <br>• <span style="color: var(--accent-emerald);">72%</span> positive mentions of recycling programs
+                <br>• <span style="color: var(--accent-emerald);">68%</span> appreciation for carbon-neutral goals
+                <br>• <span style="color: var(--accent-amber);">23%</span> skepticism about "greenwashing"
+                <br>• <span style="color: var(--accent-red);">9%</span> concerns about e-waste
+
+                <br><br>The most discussed topics are the recycled aluminum in MacBooks, the carbon footprint reduction in shipping, and the trade-in program effectiveness.
+
+                <div class="sources-list">
+                  <div class="sources-label">📚 Top Sources</div>
+                  <div class="source-item">
+                    <div class="source-icon">📰</div>
+                    <div class="source-info">
+                      <div class="source-title">TechCrunch: Apple's Green Initiative</div>
+                      <div class="source-meta">News • Dec 15, 2024</div>
+                    </div>
+                    <span class="source-score">0.94</span>
+                  </div>
+                  <div class="source-item">
+                    <div class="source-icon">🐦</div>
+                    <div class="source-info">
+                      <div class="source-title">Twitter Thread: @sustainability</div>
+                      <div class="source-meta">Social • 2.4K engagements</div>
+                    </div>
+                    <span class="source-score">0.89</span>
+                  </div>
+                  <div class="source-item">
+                    <div class="source-icon">💬</div>
+                    <div class="source-info">
+                      <div class="source-title">Reddit r/apple Discussion</div>
+                      <div class="source-meta">Forum • 847 comments</div>
+                    </div>
+                    <span class="source-score">0.86</span>
+                  </div>
+                </div>
+              </div>
+              <div class="message-meta">
+                <span>InsightRAG</span>
+                <span>•</span>
+                <span>47ms latency</span>
+                <span>•</span>
+                <span>1,847 docs retrieved</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-input-container">
+            <div class="chat-input-wrapper">
+              <input type="text" class="chat-input" id="query-input" placeholder="Ask about consumer sentiment, trends, or brand perception..." />
+              <button class="send-btn" onclick="sendQuery()">→</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar">
+          <div class="sidebar-card">
+            <div class="sidebar-title">📊 Query Stats</div>
+            <div class="stats-mini">
+              <div class="stat-mini">
+                <div class="stat-mini-value">47ms</div>
+                <div class="stat-mini-label">Latency</div>
+              </div>
+              <div class="stat-mini">
+                <div class="stat-mini-value">1.8K</div>
+                <div class="stat-mini-label">Docs Retrieved</div>
+              </div>
+              <div class="stat-mini">
+                <div class="stat-mini-value">0.91</div>
+                <div class="stat-mini-label">Relevance</div>
+              </div>
+              <div class="stat-mini">
+                <div class="stat-mini-value">3</div>
+                <div class="stat-mini-label">Sources Used</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sidebar-card">
+            <div class="sidebar-title">📚 Data Sources</div>
+            <div class="data-source">
+              <div class="data-source-icon twitter">🐦</div>
+              <div class="data-source-info">
+                <div class="data-source-name">Twitter/X</div>
+                <div class="data-source-count">1.2M posts indexed</div>
+              </div>
+              <div class="data-source-status"></div>
+            </div>
+            <div class="data-source">
+              <div class="data-source-icon news">📰</div>
+              <div class="data-source-info">
+                <div class="data-source-name">News Articles</div>
+                <div class="data-source-count">485K articles</div>
+              </div>
+              <div class="data-source-status"></div>
+            </div>
+            <div class="data-source">
+              <div class="data-source-icon reddit">💬</div>
+              <div class="data-source-info">
+                <div class="data-source-name">Reddit</div>
+                <div class="data-source-count">620K posts</div>
+              </div>
+              <div class="data-source-status"></div>
+            </div>
+            <div class="data-source">
+              <div class="data-source-icon reviews">⭐</div>
+              <div class="data-source-info">
+                <div class="data-source-name">Product Reviews</div>
+                <div class="data-source-count">95K reviews</div>
+              </div>
+              <div class="data-source-status"></div>
+            </div>
+          </div>
+
+          <div class="sidebar-card">
+            <div class="sidebar-title">💡 Try These Queries</div>
+            <div class="query-example" onclick="setQuery('What do Gen-Z consumers think about fast fashion?')">
+              "What do Gen-Z consumers think about fast fashion?"
+            </div>
+            <div class="query-example" onclick="setQuery('Compare Tesla vs BYD sentiment in Europe')">
+              "Compare Tesla vs BYD sentiment in Europe"
+            </div>
+            <div class="query-example" onclick="setQuery('What are the top complaints about airline loyalty programs?')">
+              "Top complaints about airline loyalty programs?"
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PIPELINE MONITOR -->
+    <div class="demo-panel" id="pipeline">
+      <div class="demo-hero">
+        <div class="demo-badge">⚡ Real-Time Processing</div>
+        <h1 class="demo-title">Ingestion <span class="highlight">Pipeline Monitor</span></h1>
+        <p class="demo-subtitle">Track document ingestion, embedding generation, and vector indexing in real-time.</p>
+      </div>
+
+      <div class="pipeline-grid">
+        <div class="pipeline-step">
+          <div class="pipeline-icon">📥</div>
+          <div class="pipeline-title">Ingest</div>
+          <div class="pipeline-desc">Stream from APIs, crawlers, file uploads</div>
+        </div>
+        <div class="pipeline-step">
+          <div class="pipeline-icon">🔧</div>
+          <div class="pipeline-title">Process</div>
+          <div class="pipeline-desc">Clean, chunk, extract metadata</div>
+        </div>
+        <div class="pipeline-step">
+          <div class="pipeline-icon">🧠</div>
+          <div class="pipeline-title">Embed</div>
+          <div class="pipeline-desc">Generate 768-dim vectors</div>
+        </div>
+        <div class="pipeline-step">
+          <div class="pipeline-icon">💾</div>
+          <div class="pipeline-title">Index</div>
+          <div class="pipeline-desc">Store in Vespa for retrieval</div>
+        </div>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Throughput</div>
+          <div class="metric-value info">12.4K</div>
+          <div style="font-size: 11px; color: var(--text-muted);">docs/minute</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Total Indexed</div>
+          <div class="metric-value success">2.4M</div>
+          <div style="font-size: 11px; color: var(--text-muted);">documents</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Avg Latency</div>
+          <div class="metric-value" style="color: var(--text-primary);">23ms</div>
+          <div style="font-size: 11px; color: var(--text-muted);">per document</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Error Rate</div>
+          <div class="metric-value warning">0.02%</div>
+          <div style="font-size: 11px; color: var(--text-muted);">last hour</div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Active Ingestion Jobs</span>
+            <div class="status-badge processing">
+              <span class="status-dot"></span>
+              3 Running
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="ingestion-item">
+              <div class="ingestion-icon">🐦</div>
+              <div class="ingestion-info">
+                <div class="ingestion-name">Twitter Firehose</div>
+                <div class="ingestion-meta">Real-time stream • #brands #products</div>
+              </div>
+              <div class="ingestion-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%;"></div>
+                </div>
+                <div class="progress-text">Streaming</div>
+              </div>
+            </div>
+
+            <div class="ingestion-item">
+              <div class="ingestion-icon">📰</div>
+              <div class="ingestion-info">
+                <div class="ingestion-name">News Crawler Batch</div>
+                <div class="ingestion-meta">24,500 articles • Started 12m ago</div>
+              </div>
+              <div class="ingestion-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 67%;"></div>
+                </div>
+                <div class="progress-text">67%</div>
+              </div>
+            </div>
+
+            <div class="ingestion-item">
+              <div class="ingestion-icon">💬</div>
+              <div class="ingestion-info">
+                <div class="ingestion-name">Reddit Subreddit Sync</div>
+                <div class="ingestion-meta">r/technology, r/gadgets • 8,200 posts</div>
+              </div>
+              <div class="ingestion-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 34%;"></div>
+                </div>
+                <div class="progress-text">34%</div>
+              </div>
+            </div>
+
+            <div class="ingestion-item">
+              <div class="ingestion-icon">⭐</div>
+              <div class="ingestion-info">
+                <div class="ingestion-name">Amazon Reviews Import</div>
+                <div class="ingestion-meta">Electronics category • Completed</div>
+              </div>
+              <div class="ingestion-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%; background: var(--accent-emerald);"></div>
+                </div>
+                <div class="progress-text" style="color: var(--accent-emerald);">Done</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Vector Index Stats</span>
+          </div>
+          <div class="card-body">
+            <div class="vector-stats">
+              <div class="vector-stat">
+                <div class="vector-stat-value">2.4M</div>
+                <div class="vector-stat-label">Total Vectors</div>
+              </div>
+              <div class="vector-stat">
+                <div class="vector-stat-value">768</div>
+                <div class="vector-stat-label">Dimensions</div>
+              </div>
+              <div class="vector-stat">
+                <div class="vector-stat-value">4.2GB</div>
+                <div class="vector-stat-label">Index Size</div>
+              </div>
+            </div>
+
+            <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);">
+              <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; font-weight: 700;">Index Health</div>
+              
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="font-size: 12px;">Query P99 Latency</span>
+                <span style="font-size: 12px; color: var(--accent-emerald); font-family: 'IBM Plex Mono', monospace;">47ms</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="font-size: 12px;">Index Fragmentation</span>
+                <span style="font-size: 12px; color: var(--accent-emerald); font-family: 'IBM Plex Mono', monospace;">2.1%</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="font-size: 12px;">Replica Sync</span>
+                <span style="font-size: 12px; color: var(--accent-emerald); font-family: 'IBM Plex Mono', monospace;">✓ Synced</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="font-size: 12px;">Last Compaction</span>
+                <span style="font-size: 12px; color: var(--text-secondary); font-family: 'IBM Plex Mono', monospace;">2h ago</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="control-group">
+          <button class="btn">⏸️ Pause Ingestion</button>
+          <button class="btn">🔄 Reindex All</button>
+        </div>
+        <div class="control-group">
+          <button class="btn primary">📊 View Detailed Metrics</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ARCHITECTURE -->
+    <div class="demo-panel" id="architecture">
+      <div class="demo-hero">
+        <div class="demo-badge">🏗️ System Design</div>
+        <h1 class="demo-title">Scalable RAG <span class="highlight">Architecture</span></h1>
+        <p class="demo-subtitle">Production-grade retrieval-augmented generation pipeline for consumer intelligence at scale.</p>
+      </div>
+
+      <div class="arch-diagram">
+        <div class="arch-layers">
+          <div class="arch-layer">
+            <div class="arch-layer-label">Data Sources</div>
+            <div class="arch-layer-content">
+              <div class="arch-component">🐦 Twitter API</div>
+              <div class="arch-component">📰 News RSS</div>
+              <div class="arch-component">💬 Reddit API</div>
+              <div class="arch-component">⭐ Review APIs</div>
+            </div>
+          </div>
+
+          <div class="arch-layer">
+            <div class="arch-layer-label">Ingestion</div>
+            <div class="arch-layer-content">
+              <div class="arch-component primary">📥 Kafka Streams</div>
+              <div class="arch-component primary">🔧 Spark Processing</div>
+              <div class="arch-component primary">📋 Schema Registry</div>
+            </div>
+          </div>
+
+          <div class="arch-layer">
+            <div class="arch-layer-label">ML Pipeline</div>
+            <div class="arch-layer-content">
+              <div class="arch-component secondary">🧠 Sentence Transformers</div>
+              <div class="arch-component secondary">🎯 NER Extraction</div>
+              <div class="arch-component secondary">😊 Sentiment Model</div>
+            </div>
+          </div>
+
+          <div class="arch-layer">
+            <div class="arch-layer-label">Storage</div>
+            <div class="arch-layer-content">
+              <div class="arch-component tertiary">🔍 Vespa (Vectors)</div>
+              <div class="arch-component tertiary">🗄️ PostgreSQL (Meta)</div>
+              <div class="arch-component tertiary">⚡ Redis (Cache)</div>
+            </div>
+          </div>
+
+          <div class="arch-layer">
+            <div class="arch-layer-label">API Layer</div>
+            <div class="arch-layer-content">
+              <div class="arch-component">🚀 FastAPI</div>
+              <div class="arch-component">🤖 LLM Integration</div>
+              <div class="arch-component">📊 Analytics API</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Technical Specifications</span>
+        </div>
+        <div class="card-body">
+          <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; text-align: center;">
+            <div>
+              <div style="font-size: 24px; font-weight: 700; color: var(--accent-blue);">768</div>
+              <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Embedding Dim</div>
+            </div>
+            <div>
+              <div style="font-size: 24px; font-weight: 700; color: var(--accent-cyan);">47ms</div>
+              <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Query P99</div>
+            </div>
+            <div>
+              <div style="font-size: 24px; font-weight: 700; color: var(--accent-emerald);">12K</div>
+              <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Docs/Min</div>
+            </div>
+            <div>
+              <div style="font-size: 24px; font-weight: 700; color: var(--accent-violet);">2.4M</div>
+              <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Total Docs</div>
+            </div>
+            <div>
+              <div style="font-size: 24px; font-weight: 700; color: var(--accent-amber);">99.9%</div>
+              <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Uptime</div>
+            </div>
+          </div>
+
+          <div class="tech-stack">
+            <span class="tech-tag">Python</span>
+            <span class="tech-tag">FastAPI</span>
+            <span class="tech-tag">Vespa</span>
+            <span class="tech-tag">Kafka</span>
+            <span class="tech-tag">Spark</span>
+            <span class="tech-tag">Sentence-Transformers</span>
+            <span class="tech-tag">PostgreSQL</span>
+            <span class="tech-tag">Redis</span>
+            <span class="tech-tag">Kubernetes</span>
+            <span class="tech-tag">Terraform</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="control-group">
+          <button class="btn">📖 Documentation</button>
+          <button class="btn">🔗 API Reference</button>
+        </div>
+        <div class="control-group">
+          <button class="btn primary">💻 View Source Code</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>Built by <span class="footer-highlight">Sameer M</span> • Meltwater ML Engineer Demo • Scalable Consumer Intelligence RAG</p>
+  </footer>
+
+  <script>
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.demo-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    function setQuery(query) {
+      document.getElementById('query-input').value = query;
+      document.getElementById('query-input').focus();
+    }
+
+    function sendQuery() {
+      const input = document.getElementById('query-input');
+      const query = input.value.trim();
+      if (!query) return;
+
+      const messagesContainer = document.getElementById('chat-messages');
+      
+      // Add user message
+      const userMsg = document.createElement('div');
+      userMsg.className = 'message user';
+      userMsg.innerHTML = `
+        <div class="message-content">${query}</div>
+        <div class="message-meta">
+          <span>You</span>
+          <span>•</span>
+          <span>Just now</span>
+        </div>
+      `;
+      messagesContainer.appendChild(userMsg);
+
+      // Clear input
+      input.value = '';
+
+      // Simulate response
+      setTimeout(() => {
+        const assistantMsg = document.createElement('div');
+        assistantMsg.className = 'message assistant';
+        assistantMsg.innerHTML = `
+          <div class="message-content">
+            Searching across 2.4M documents for relevant insights...
+            <br><br>
+            <em style="color: var(--text-muted);">This is a demo interface. In production, this would return real-time RAG results with source citations and confidence scores.</em>
+          </div>
+          <div class="message-meta">
+            <span>InsightRAG</span>
+            <span>•</span>
+            <span>Demo mode</span>
+          </div>
+        `;
+        messagesContainer.appendChild(assistantMsg);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }, 800);
+
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // Enter key to send
+    document.getElementById('query-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendQuery();
+    });
+  </script>
+</body>
+</html>
